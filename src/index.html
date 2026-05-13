@@ -4,7 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Mi Presupuesto</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Balance">
+  <meta name="theme-color" content="#0f0f11">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f0f11;--sur:#18181c;--sur2:#222228;--bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);--tx:#f0eff0;--tx2:#888890;--tx3:#555560;--green:#1fcc8a;--red:#ff6b6b;--rd:rgba(255,107,107,0.12);--ac:#7c6fff;--am:#f5a623;--r:16px;--rs:10px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -663,6 +672,14 @@ function fallback(txt){
   const isOt=S.categories[idx].isOtros;
   const msg=isOt?`📦 +${fmt(amt)} en Otros (revisar)`:`✓ +${fmt(amt)} en ${S.categories[idx].name}`;
   setVL(msg,isOt?'pr':'ok');toast(msg);document.getElementById('vtr').textContent='';expandedCat=idx;
+}
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
 }
 </script>
 </body>
