@@ -23,15 +23,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject secrets into HTML
+      - name: Inject secrets and build
         run: |
-          sed -i "s|__FIREBASE_API_KEY__|${{ secrets.FIREBASE_API_KEY }}|g" src/index.html
-          sed -i "s|__FIREBASE_AUTH_DOMAIN__|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" src/index.html
-          sed -i "s|__FIREBASE_DB_URL__|${{ secrets.FIREBASE_DB_URL }}|g" src/index.html
-          sed -i "s|__FIREBASE_PROJECT_ID__|${{ secrets.FIREBASE_PROJECT_ID }}|g" src/index.html
-          sed -i "s|__FIREBASE_APP_ID__|${{ secrets.FIREBASE_APP_ID }}|g" src/index.html
           mkdir -p dist
           cp src/index.html dist/index.html
+          sed -i "s|__FIREBASE_API_KEY__|${{ secrets.FIREBASE_API_KEY }}|g" dist/index.html
+          sed -i "s|__FIREBASE_AUTH_DOMAIN__|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" dist/index.html
+          sed -i "s|__FIREBASE_DB_URL__|${{ secrets.FIREBASE_DB_URL }}|g" dist/index.html
+          sed -i "s|__FIREBASE_PROJECT_ID__|${{ secrets.FIREBASE_PROJECT_ID }}|g" dist/index.html
+          sed -i "s|__FIREBASE_APP_ID__|${{ secrets.FIREBASE_APP_ID }}|g" dist/index.html
+          cp src/manifest.json dist/manifest.json
+          cp src/sw.js dist/sw.js
+          cp src/icon-192.png dist/icon-192.png
+          cp src/icon-512.png dist/icon-512.png
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
