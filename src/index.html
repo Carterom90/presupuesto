@@ -177,6 +177,7 @@ body{display:flex;flex-direction:column;max-width:430px;margin:0 auto}
   <div class="content">
     <div class="hero">
       <div class="hero-lbl">Disponible este mes</div>
+    <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">v10 · decimales activos</div>
       <div class="hero-bal" id="hbal">0€</div>
       <div class="hero-sub" id="hsub"></div>
     </div>
@@ -685,9 +686,14 @@ function fallback(txt){
 </script>
 
 <script>
+// Force clear old service worker caches
 if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(r=>r.unregister());
+  });
+  caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=10').catch(()=>{});
   });
 }
 </script>
