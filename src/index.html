@@ -346,7 +346,11 @@ function defS(){
 
 function dbKey(){ return `budget_${cy}_${String(cm).padStart(2,'0')}`; }
 function setSyncDot(s){ document.getElementById('syncDot').className='sync-dot '+s; }
-function fmt(n){ return Math.round(n).toLocaleString('es-ES')+'€'; }
+function fmt(n){ 
+  if(n===undefined||n===null)return '0€';
+  const r=Math.round(n*100)/100;
+  return r.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+'€'; 
+}
 function catTotal(c){ return (c.entries||[]).reduce((s,e)=>s+(e.amount||0),0); }
 function fmtDate(ts){
   const d=new Date(ts), h=new Date(), y=new Date(h);
