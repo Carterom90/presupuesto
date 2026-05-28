@@ -248,6 +248,7 @@ body{display:flex;flex-direction:column;max-width:430px;margin:0 auto}
         <option value="🎬">🎬 Ocio</option><option value="🍽️">🍽️ Restaurantes</option>
         <option value="💡">💡 Facturas</option><option value="🏋️">🏋️ Deporte</option>
         <option value="🛍️">🛍️ Compras Online</option><option value="🔄">🔄 Suscripciones</option>
+        <option value="🥘">🥘 Comida</option><option value="🎁">🎁 Regalo</option>
         <option value="📦">📦 Otro</option>
       </select>
     </div>
@@ -273,7 +274,7 @@ body{display:flex;flex-direction:column;max-width:430px;margin:0 auto}
     <div class="handle"></div>
     <div class="sht">Saldo de entrada</div>
     <div class="field"><label>Descripción</label><input id="iNm" type="text" placeholder="Sueldo neto"></div>
-    <div class="field"><label>Importe mensual (€)</label><input id="iAm" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01"></div>
+    <div class="field"><label>Importe mensual (€)</label><input id="iAm" type="text" inputmode="decimal" placeholder="0,00"></div>
     <div class="shbtns">
       <button class="bcn" onclick="closeInc()">Cancelar</button>
       <button class="bsv" onclick="saveInc()">Guardar</button>
@@ -315,7 +316,9 @@ const RULES=`Reglas aprendidas del usuario:
 - "Salud": farmacia, médico, dentista, óptica, fisio, medicamento
 - "Ocio": cine, concierto, teatro, parque
 - "Facturas": luz, agua, gas, internet, móvil, teléfono, seguro de coche
-- "Restaurantes": restaurante, bar, cafetería, desayuno fuera, comida, cena, menú, terraza
+- "Restaurantes": restaurante, bar, cafetería, desayuno fuera, cena, menú, terraza
+- "Comida": comida para llevar, menú del día, bocadillo, tupper, comida rápida, kebab, hamburguesería
+- "Regalo": regalo, presente, detalle, cumpleaños, aniversario, boda, celebración
 - "Otros": todo lo que no encaje claramente. Ante la mínima duda, SIEMPRE Otros.`;
 
 let cm=new Date().getMonth(), cy=new Date().getFullYear(), catIdx=null, expandedCat=null;
@@ -334,6 +337,8 @@ function defS(){
       {name:'Restaurantes',   icon:'🍽️',color:'#f5a623',entries:[]},
       {name:'Compras Online', icon:'🛍️',color:'#7c6fff',entries:[]},
       {name:'Suscripciones',  icon:'🔄',color:'#4ab8e8',entries:[]},
+      {name:'Comida',           icon:'🥘',color:'#f5a623',entries:[]},
+      {name:'Regalo',            icon:'🎁',color:'#e879a0',entries:[]},
       {name:'Otros',          icon:'📦',color:'#888890',entries:[],isOtros:true},
     ]
   };
@@ -497,7 +502,7 @@ function render(){
     });
     inner+=`<div class="exp-add-row">
       <input class="exp-add-input" id="qaD_${i}" type="text" placeholder="Descripción">
-      <input class="exp-add-input" id="qaA_${i}" type="number" inputmode="decimal" placeholder="€" style="width:70px;flex:none" min="0" step="0.01">
+      <input class="exp-add-input" id="qaA_${i}" type="text" inputmode="decimal" placeholder="0,00" style="width:70px;flex:none">
       <button class="exp-add-btn" data-qi="${i}">+</button>
     </div>
     <div style="padding:6px 0 4px">
@@ -522,7 +527,7 @@ function delEntry(ci,ei,e){ e.stopPropagation(); S.categories[ci].entries.splice
 function quickAdd(i,e){
   e.stopPropagation();
   const desc=document.getElementById(`qaD_${i}`).value.trim()||'Gasto';
-  const amt=parseFloat(document.getElementById(`qaA_${i}`).value)||0;
+  const amt=parseFloat(document.getElementById(`qaA_${i}`).value.replace(',','.'))||0;
   if(amt<=0)return;
   addEntry(i,desc,amt,'Tú');
   document.getElementById(`qaD_${i}`).value='';
@@ -611,7 +616,7 @@ window.openInc=function(){document.getElementById('iNm').value=S.income.name;doc
 window.closeInc=function(){document.getElementById('iMod').classList.remove('open');};
 window.saveInc=function(){
   const name=document.getElementById('iNm').value.trim()||'Sueldo neto';
-  const amt=parseFloat(document.getElementById('iAm').value)||0;
+  const amt=parseFloat(document.getElementById('iAm').value.replace(',','.'))||0;
   S.income={name,amount:amt};persist();closeInc();toast('✓ Entrada actualizada');
 };
 document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
@@ -637,7 +642,7 @@ window.stopV=function(e){
 function setFab(l,p){document.getElementById('fab').className='fab'+(l?' li':p?' pr':'');}
 function setVL(t,c){const el=document.getElementById('vfb');el.textContent=t;el.className='vfb'+(c?' '+c:'');}
 
-const KW_MAP={'Compras Online':['amazon','temu','aliexpress','shein','zalando','ebay','online','pedido'],'Suscripciones':['netflix','spotify','hbo','disney','apple','google','icloud','prime','filmin','youtube','suscripción'],'Alimentación':['mercadona','lidl','carrefour','dia','aldi','supermercado','compra','frutería'],'Transporte':['gasolina','gasolinera','repsol','bp','taxi','uber','tren','bus','metro','parking','peaje'],'Salud':['farmacia','médico','dentista','óptica','fisio','medicamento'],'Ocio':['cine','concierto','teatro','parque'],'Facturas':['luz','agua','gas','internet','móvil','teléfono','seguro'],'Restaurantes':['restaurante','bar','cafetería','desayuno','comida','cena','menú','terraza','pizza']};
+const KW_MAP={'Compras Online':['amazon','temu','aliexpress','shein','zalando','ebay','online','pedido'],'Suscripciones':['netflix','spotify','hbo','disney','apple','google','icloud','prime','filmin','youtube','suscripción'],'Alimentación':['mercadona','lidl','carrefour','dia','aldi','supermercado','compra','frutería'],'Transporte':['gasolina','gasolinera','repsol','bp','taxi','uber','tren','bus','metro','parking','peaje'],'Salud':['farmacia','médico','dentista','óptica','fisio','medicamento'],'Ocio':['cine','concierto','teatro','parque'],'Facturas':['luz','agua','gas','internet','móvil','teléfono','seguro'],'Restaurantes':['restaurante','bar','cafetería','desayuno','cena','menú','terraza','pizza'],'Comida':['comida','menú del día','bocadillo','tupper','kebab','hamburguesería'],'Regalo':['regalo','presente','cumpleaños','aniversario','boda','celebración','detalle']};
 
 async function procV(txt){
   setFab(false,true);setVL('Interpretando…','pr');
