@@ -560,12 +560,15 @@ function fmtDate(ts){
 
 // ── AUTH ───────────────────────────────────────────────────────────
 onAuthStateChanged(auth, user=>{
+  console.log('onAuthStateChanged fired, user:', user ? user.email : 'null');
   if(user){
+    console.log('Showing app screen');
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('appScreen').className='app-screen visible';
     document.getElementById('sidebarUser').textContent=user.email||'';
     subscribeMonth();
   } else {
+    console.log('No user, showing login');
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('appScreen').className='app-screen';
     if(fbListener){ fbListener(); fbListener=null; }
@@ -577,10 +580,15 @@ window.doLogin=async function(){
   const pass=document.getElementById('lPass').value;
   const err=document.getElementById('lError');
   err.className='login-error';
+  err.textContent='Conectando...';
+  err.className='login-error show';
   try{
-    await signInWithEmailAndPassword(auth,email,pass);
+    const cred = await signInWithEmailAndPassword(auth,email,pass);
+    err.textContent='Login OK, cargando app...';
+    console.log('Login OK', cred.user.email);
   }catch(e){
-    err.textContent='Email o contraseña incorrectos';
+    console.error('Login error:', e.code, e.message);
+    err.textContent='Error: '+e.code;
     err.className='login-error show';
   }
 };
