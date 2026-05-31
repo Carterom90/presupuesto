@@ -292,6 +292,114 @@ body{display:flex;flex-direction:column;max-width:430px;margin:0 auto}
 </div>
 
 <!-- APP -->
+<div class="app-screen" id="appScreen">
+
+  <div class="header">
+    <div class="mnav">
+      <button class="mnbtn" onclick="chM(-1)">‹</button>
+      <div class="mlbl" id="mlbl" onclick="openDatePicker()" style="cursor:pointer;user-select:none" title="Toca para seleccionar mes y año"></div>
+      <button class="mnbtn" onclick="chM(1)">›</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="sync-dot" id="syncDot"></div>
+      <button onclick="openInc()" style="background:none;border:0.5px solid var(--bd2);color:var(--tx2);border-radius:50%;width:34px;height:34px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
+      <button class="menu-btn" onclick="openSidebar()">☰</button>
+    </div>
+  </div>
+
+  <!-- Home view -->
+  <div class="view active" id="view-home" style="flex:1;overflow-y:auto">
+  <div class="content" id="homeContent">
+    <div class="hero">
+      <div class="hero-lbl">Disponible este mes</div>
+      <div class="hero-bal" id="hbal">0€</div>
+      <div class="hero-sub" id="hsub"></div>
+    </div>
+    <div class="sgrid">
+      <div class="sc"><div class="sc-l">↓ Entrada</div><div class="sc-v inc" id="sInc">0€</div></div>
+      <div class="sc"><div class="sc-l">↑ Gastos</div><div class="sc-v exp" id="sExp">0€</div></div>
+    </div>
+    <div class="alert-banner" id="alertBanner">
+      <div class="alert-icon" id="alertIcon"></div>
+      <div><div class="alert-title" id="alertTitle"></div><div class="alert-sub" id="alertSub"></div></div>
+    </div>
+    <div class="meta-card">
+      <div class="meta-top">
+        <div><div class="meta-label">Objetivo de ahorro</div><div class="meta-title">24.000€ en 12 meses</div></div>
+        <div class="meta-badge" id="metaBadge">0 / 12</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-size:11px;color:var(--tx3);margin-bottom:2px">Acumulado</div>
+          <div class="meta-big" id="metaAcum">0€ <span>de 24.000€</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--tx3);margin-bottom:2px">Este mes</div>
+          <div style="font-size:20px;font-weight:500;font-family:'DM Mono',monospace;color:var(--ac)" id="metaMes">0€</div>
+          <div style="font-size:11px;color:var(--tx3)">de 2.000€</div>
+        </div>
+      </div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="metaBar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-bottom:14px">
+        <span id="metaPct">0%</span><span>24.000€</span>
+      </div>
+      <div class="months-row" id="monthDots"></div>
+      <div class="meta-month-row">
+        <div style="font-size:13px;color:var(--tx2)" id="metaMonthInfo">Este mes: <strong>pendiente</strong></div>
+        <button class="meta-saved-btn pending" id="metaBtn" onclick="toggleSaving()">Marcar guardado</button>
+      </div>
+    </div>
+    <div class="sr"><div class="sl">Entrada mensual</div></div>
+    <div class="irow" onclick="openInc()">
+      <div><div class="i-name" id="iname">—</div><div class="i-sub">Toca para editar</div></div>
+      <div class="i-amt" id="iamt">—</div>
+    </div>
+    <div class="sr">
+      <div class="sl">Gastos</div>
+      <button onclick="openAdd()" style="background:none;border:none;color:var(--ac);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Añadir categoría</button>
+    </div>
+    <div class="cats" id="catList"></div>
+  </div>
+  </div>
+
+  <!-- Annual view -->
+  <div class="view" id="view-annual" style="padding:0 16px 40px;overflow-y:auto">
+    <div class="view-title">Resumen anual</div>
+    <div class="annual-totals" id="annualTotals"></div>
+    <div class="annual-grid" id="annualGrid"></div>
+  </div>
+
+  <!-- Balance view -->
+  <div class="view" id="view-balance" style="padding:0 16px 40px;overflow-y:auto">
+    <div class="view-title">Balance acumulado</div>
+    <div class="cumul-card" id="cumulCard"></div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <!-- Log view -->
+  <div class="view" id="view-log" style="padding:0 16px 40px;overflow-y:auto">
+    <div class="view-title">Registro del mes</div>
+    <div class="log-filter" id="logFilter"></div>
+    <div style="background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rs);padding:4px 10px">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th style="text-align:right">Importe</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody"></tbody>
+      </table>
+      <div class="log-total-row">
+        <span class="log-total-label">Total</span>
+        <span class="log-total-val" id="logTotalVal">0,00€</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end appScreen -->
 
 <div class="toast" id="tst"></div>
 
