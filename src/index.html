@@ -680,6 +680,8 @@ function setSyncDot(s){ document.getElementById('syncDot').className='sync-dot '
 function subscribe(){
   if(fbUnsub){ fbUnsub(); fbUnsub=null; }
   setSyncDot('sy');
+  // Update month label immediately
+  document.getElementById('mlbl').textContent = MO[cm]+' '+cy;
   fbUnsub = onValue(ref(db, dbKey()), snap=>{
     S = snap.exists() ? snap.val() : defS();
     fixCats();
@@ -970,7 +972,9 @@ window.toggleSaving = async function(){
 // ── NAV ───────────────────────────────────────────────────
 window.chM = function(d){
   cm+=d; if(cm>11){cm=0;cy++;} if(cm<0){cm=11;cy--;}
-  expandedCat=null; subscribe();
+  expandedCat=null;
+  document.getElementById('mlbl').textContent = MO[cm]+' '+cy;
+  subscribe();
 };
 
 window.openDatePicker = function(){
@@ -989,7 +993,9 @@ window.applyDate = function(){
   cm=+document.getElementById('dpM').value;
   cy=+document.getElementById('dpY').value;
   closeModal('modDate');
-  expandedCat=null; subscribe();
+  expandedCat=null;
+  document.getElementById('mlbl').textContent = MO[cm]+' '+cy;
+  subscribe();
 };
 
 // ── VIEWS ─────────────────────────────────────────────────
