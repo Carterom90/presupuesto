@@ -425,7 +425,7 @@ html,body{height:100%;background:#0f0f11;color:#f0eff0;font-family:'DM Sans',san
 
   <!-- Header -->
   <div class="header">
-    <div class="mnav">
+    <div class="mnav" id="mnav">
       <button class="mnbtn" onclick="chM(-1)">‹</button>
       <div class="mlbl" id="mlbl" onclick="openDatePicker()"></div>
       <button class="mnbtn" onclick="chM(1)">›</button>
@@ -1007,6 +1007,8 @@ window.showView = function(v){
     const el=document.getElementById('view-'+x);
     if(el) el.className='view view-pad'+(x===v?' on':'');
   });
+  // Hide month navigation outside home view
+  document.getElementById('mnav').style.visibility = v==='home' ? 'visible' : 'hidden';
   currentView=v;
   if(v==='annual')  renderAnnual();
   if(v==='balance') renderBalance();
