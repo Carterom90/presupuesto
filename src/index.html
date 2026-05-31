@@ -44,7 +44,7 @@ body{max-width:430px;margin:0 auto;position:relative}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--tx3);flex-shrink:0;transition:background .3s}
 .sync-dot.ok{background:var(--green)}.sync-dot.syncing{background:var(--am);animation:blink 1s infinite}.sync-dot.error{background:var(--red)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.content{flex:1;overflow-y:auto;padding:0 16px 24px;-webkit-overflow-scrolling:touch}
+.content{flex:1;overflow-y:auto;padding:0 16px 40px;-webkit-overflow-scrolling:touch}
 .hero{text-align:center;padding:20px 0 24px}
 .hero-lbl{font-size:12px;color:var(--tx3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
 .hero-bal{font-size:42px;font-weight:300;letter-spacing:-1.5px;font-family:'DM Mono',monospace}
@@ -166,7 +166,7 @@ body{max-width:430px;margin:0 auto;position:relative}
 
 /* Views */
 .view{display:none;flex:1;overflow-y:auto;padding:0 16px 40px}
-.view.active{display:block}
+.view.active{display:flex;flex-direction:column}
 .view-title{font-size:20px;font-weight:500;margin:24px 0 20px}
 
 /* Annual summary */
@@ -308,7 +308,7 @@ body{max-width:430px;margin:0 auto;position:relative}
   </div>
 
   <!-- Home view -->
-  <div class="view active" id="view-home" style="flex:1;overflow-y:auto">
+  <div class="view active" id="view-home" style="flex:1;overflow-y:auto;flex-direction:column">
   <div class="content" id="homeContent">
     <div class="hero">
       <div class="hero-lbl">Disponible este mes</div>
@@ -741,6 +741,7 @@ function addEntry(ci,desc,amount,who){
   S.categories[ci].entries.push({desc,amount,who,ts:Date.now()});
   persist();
   if(currentView==='log') renderLog();
+  // render() is called automatically via Firebase onValue listener
 }
 
 // ── META ───────────────────────────────────────────────────────────
@@ -909,6 +910,242 @@ window.delLogEntry = function(ci, ei){
 };
 
 
+// ── SIDEBAR ────────────────────────────────────────────────────────
+window.openSidebar = function(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+};
+window.closeSidebar = function(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+};
+
+let currentView = 'home';
+window.showView = function(view){
+  closeSidebar();
+  ['home','annual','balance','log'].forEach(v=>{
+    const btn = document.getElementById('nav-'+v);
+    if(btn) btn.className = 'sidebar-item'+(v===view?' active':'');
+    const vEl = document.getElementById('view-'+v);
+    if(vEl) vEl.className = 'view'+(v===view?' active':'');
+  });
+  currentView = view;
+  if(view==='annual') renderAnnual();
+  if(view==='balance') renderBalanceTimeline();
+  if(view==='log') renderLog();
+};
+
+// ── DATE PICKER ────────────────────────────────────────────────────
+window.openDatePicker = function(){
+  document.getElementById('dpMonth').value = cm;
+  const yrSel = document.getElementById('dpYear');
+  yrSel.innerHTML = '';
+  for(let y = cy-3; y <= cy+2; y++){
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if(y === cy) opt.selected = true;
+    yrSel.appendChild(opt);
+  }
+  document.getElementById('dateMod').classList.add('open');
+};
+window.closeDatePicker = function(){
+  document.getElementById('dateMod').classList.remove('open');
+};
+window.applyDatePicker = function(){
+  cm = parseInt(document.getElementById('dpMonth').value);
+  cy = parseInt(document.getElementById('dpYear').value);
+  closeDatePicker();
+  expandedCat = null;
+  subscribeMonth();
+};
+
+// ── ANNUAL VIEW ────────────────────────────────────────────────────
+async function renderAnnual(){
+  const year = cy;
+  const totalsEl = document.getElementById('annualTotals');
+  const gridEl = document.getElementById('annualGrid');
+  totalsEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);grid-column:1/-1;text-align:center;padding:20px">Cargando...</div>';
+  gridEl.innerHTML = '';
+
+  const savingsSnap = await new Promise(res=>onValue(ref(db,'savings_goal'),res,{onlyOnce:true}));
+  const sv = savingsSnap.exists() ? savingsSnap.val() : {};
+  const months = [];
+
+  for(let m=0; m<12; m++){
+    const key = `budget_${year}_${String(m).padStart(2,'0')}`;
+    const snap = await new Promise(res=>onValue(ref(db,key),res,{onlyOnce:true}));
+    const data = snap.exists() ? snap.val() : null;
+    const mk = `${year}_${String(m).padStart(2,'0')}`;
+    months.push({m, data, saved:!!sv[mk]});
+  }
+
+  let totalInc=0, totalExp=0, totalSaved=0;
+  months.forEach(({data,saved})=>{
+    if(data){
+      totalInc += data.income?.amount||0;
+      totalExp += (data.categories||[]).reduce((s,c)=>(c.entries||[]).reduce((ss,e)=>ss+(e.amount||0),s),0);
+    }
+    if(saved) totalSaved += GOAL_MONTHLY;
+  });
+
+  totalsEl.innerHTML = `
+    <div class="at-card"><div class="at-label">Ingresos ${year}</div><div class="at-value inc">${fmt(totalInc)}</div></div>
+    <div class="at-card"><div class="at-label">Gastos ${year}</div><div class="at-value exp">${fmt(totalExp)}</div></div>
+    <div class="at-card"><div class="at-label">Ahorrado</div><div class="at-value sav">${fmt(totalSaved)}</div></div>
+    <div class="at-card"><div class="at-label">Balance</div><div class="at-value ${totalInc-totalExp>=0?'inc':'exp'}">${fmt(totalInc-totalExp)}</div></div>`;
+
+  const maxExp = Math.max(...months.map(({data})=>data?(data.categories||[]).reduce((s,c)=>(c.entries||[]).reduce((ss,e)=>ss+(e.amount||0),s),0):0),1);
+
+  months.forEach(({m,data,saved})=>{
+    const isCurrent = (m===cm && year===cy);
+    const card = document.createElement('div');
+    card.className = 'annual-month-card'+(isCurrent?' current':'');
+    if(!data){
+      card.innerHTML = `<div class="amc-head"><div class="amc-name">${MO[m]}</div><div class="amc-badge empty">Sin datos</div></div>`;
+      gridEl.appendChild(card); return;
+    }
+    const mExp = (data.categories||[]).reduce((s,c)=>(c.entries||[]).reduce((ss,e)=>ss+(e.amount||0),s),0);
+    const mInc = data.income?.amount||0;
+    const bal = mInc - mExp;
+    let badgeClass='ok', badgeText=saved?'✓ Ahorrado':'Positivo';
+    if(mExp>=CRIT){badgeClass='over';badgeText='Límite superado';}
+    else if(mExp>=WARN){badgeClass='warn';badgeText='Atención';}
+    else if(bal<0){badgeClass='over';badgeText='Negativo';}
+    const topCats = (data.categories||[])
+      .map(c=>({name:c.name,color:c.color,total:(c.entries||[]).reduce((s,e)=>s+(e.amount||0),0)}))
+      .filter(c=>c.total>0).sort((a,b)=>b.total-a.total).slice(0,4);
+    const barsHtml = topCats.map(c=>`
+      <div class="amc-bar-row">
+        <div class="amc-bar-label">${c.name}</div>
+        <div class="amc-bar-track"><div class="amc-bar-fill" style="width:${Math.round(c.total/maxExp*100)}%;background:${c.color}"></div></div>
+        <div class="amc-bar-val">${fmt(c.total)}</div>
+      </div>`).join('');
+    card.innerHTML = `
+      <div class="amc-head"><div class="amc-name">${MO[m]} ${saved?'🎯':''}</div><div class="amc-badge ${badgeClass}">${badgeText}</div></div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">${fmt(mExp)} gastados · ${fmt(mInc)} entrada</div>
+      <div class="amc-bars">${barsHtml||'<div style="font-size:11px;color:var(--tx3)">Sin gastos</div>'}</div>`;
+    gridEl.appendChild(card);
+  });
+}
+
+// ── BALANCE TIMELINE ───────────────────────────────────────────────
+async function renderBalanceTimeline(){
+  const cumulEl = document.getElementById('cumulCard');
+  const tlEl = document.getElementById('timeline');
+  cumulEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:20px">Cargando...</div>';
+  tlEl.innerHTML = '';
+
+  const savingsSnap = await new Promise(res=>onValue(ref(db,'savings_goal'),res,{onlyOnce:true}));
+  const sv = savingsSnap.exists() ? savingsSnap.val() : {};
+  const months = [];
+  let y=cy, m=cm;
+  for(let i=0;i<12;i++){
+    const key = `budget_${y}_${String(m).padStart(2,'0')}`;
+    const snap = await new Promise(res=>onValue(ref(db,key),res,{onlyOnce:true}));
+    months.unshift({m,y,data:snap.exists()?snap.val():null,saved:!!sv[`${y}_${String(m).padStart(2,'0')}`]});
+    m--; if(m<0){m=11;y--;}
+  }
+
+  let cumulBal=0, cumulSaved=0;
+  months.forEach(({data,saved})=>{
+    if(data){
+      const mInc = data.income?.amount||0;
+      const mExp = (data.categories||[]).reduce((s,c)=>(c.entries||[]).reduce((ss,e)=>ss+(e.amount||0),s),0);
+      cumulBal += mInc-mExp;
+    }
+    if(saved) cumulSaved += GOAL_MONTHLY;
+  });
+
+  cumulEl.innerHTML = `
+    <div class="cumul-title">Balance acumulado (12 meses)</div>
+    <div class="cumul-value ${cumulBal>=0?'pos':'neg'}">${fmt(cumulBal)}</div>
+    <div style="font-size:13px;color:var(--ac);margin-top:8px">🎯 ${fmt(cumulSaved)} ahorrados</div>`;
+
+  const maxInc = Math.max(...months.map(({data})=>data?.income?.amount||0),1);
+  months.forEach(({m,y,data,saved})=>{
+    const isCurrent = (m===cm&&y===cy);
+    const item = document.createElement('div');
+    item.className = 'tl-item'+(isCurrent?' current':'');
+    if(!data){
+      item.innerHTML = `<div class="tl-month">${MO3[m]}<br><span style="font-size:10px;color:var(--tx3)">${y}</span></div><div style="font-size:12px;color:var(--tx3)">Sin datos</div>`;
+      tlEl.appendChild(item); return;
+    }
+    const mInc = data.income?.amount||0;
+    const mExp = (data.categories||[]).reduce((s,c)=>(c.entries||[]).reduce((ss,e)=>ss+(e.amount||0),s),0);
+    const bal = mInc-mExp;
+    const expPct = Math.min(100,Math.round(mExp/maxInc*100));
+    item.innerHTML = `
+      <div class="tl-month">${MO3[m]}<br><span style="font-size:10px;color:var(--tx3)">${y}</span></div>
+      <div class="tl-bars">
+        <div class="tl-bar-wrap">
+          <div class="tl-bar-inc" style="width:100%;opacity:0.3"></div>
+          <div class="tl-bar-exp" style="width:${expPct}%"></div>
+        </div>
+        <div class="tl-amounts">
+          <span class="tl-amt" style="color:var(--green)">↓${fmt(mInc)}</span>
+          <span class="tl-amt" style="color:var(--red)">↑${fmt(mExp)}</span>
+        </div>
+      </div>
+      <div class="tl-right">
+        <div class="tl-bal ${bal>=0?'pos':'neg'}">${fmt(bal)}</div>
+        ${saved?'<div class="tl-saved">🎯 guardado</div>':''}
+      </div>`;
+    tlEl.appendChild(item);
+  });
+}
+
+// ── LOG VIEW ───────────────────────────────────────────────────────
+let logFilterCat = null;
+
+function renderLog(){
+  const cats = S.categories||[];
+  let allEntries = [];
+  cats.forEach(c=>{
+    (c.entries||[]).forEach((e,idx)=>{
+      allEntries.push({...e, catName:c.name, catColor:c.color, catIcon:c.icon, catIdx:cats.indexOf(c), entryIdx:idx});
+    });
+  });
+  allEntries.sort((a,b)=>b.ts-a.ts);
+
+  const filterEl = document.getElementById('logFilter');
+  const catsWithEntries = cats.filter(c=>(c.entries||[]).length>0);
+  filterEl.innerHTML = `<button class="log-filter-btn${logFilterCat===null?' active':''}" onclick="setLogFilter(null)">Todos</button>`
+    + catsWithEntries.map(c=>`<button class="log-filter-btn${logFilterCat===c.name?' active':''}" onclick="setLogFilter('${c.name}')" style="${logFilterCat===c.name?'':'border-color:'+c.color+';color:'+c.color}">${c.icon} ${c.name}</button>`).join('');
+
+  const filtered = logFilterCat ? allEntries.filter(e=>e.catName===logFilterCat) : allEntries;
+  const tbody = document.getElementById('logTableBody');
+
+  if(!filtered.length){
+    tbody.innerHTML = `<tr><td colspan="4" class="log-empty">Sin registros este mes</td></tr>`;
+    document.getElementById('logTotalVal').textContent = '0,00€';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(e=>`
+    <tr>
+      <td><div class="log-date">${fmtDateShort(e.ts)}</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">${e.who||''}</div></td>
+      <td><div class="log-desc">${e.desc||'Gasto'}</div><div class="log-cat" style="color:${e.catColor}">${e.catIcon} ${e.catName}</div></td>
+      <td class="log-amt" style="color:${e.catColor}">${fmt(e.amount)}</td>
+      <td><button class="log-del" onclick="delLogEntry(${e.catIdx},${e.entryIdx})">✕</button></td>
+    </tr>`).join('');
+
+  document.getElementById('logTotalVal').textContent = fmt(filtered.reduce((s,e)=>s+(e.amount||0),0));
+}
+
+function fmtDateShort(ts){
+  const d=new Date(ts), h=new Date(), y=new Date(h);
+  y.setDate(h.getDate()-1);
+  if(d.toDateString()===h.toDateString()) return 'Hoy '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===y.toDateString()) return 'Ayer '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'2-digit'})+' '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+}
+
+window.setLogFilter = function(cat){ logFilterCat=cat; renderLog(); };
+window.delLogEntry = function(ci,ei){
+  S.categories[ci].entries.splice(ei,1);
+  persist(); toast('🗑 Registro eliminado'); renderLog();
+};
+
 </script>
 <script>
 // Force clear old service worker caches
@@ -918,7 +1155,7 @@ if('serviceWorker' in navigator){
   });
   caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js?v=10').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=21').catch(()=>{});
   });
 }
 </script>
