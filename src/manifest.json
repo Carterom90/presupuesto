@@ -1,7 +1,8 @@
 {
+  "id": "/presupuesto/",
   "name": "Balance - Mi Presupuesto",
   "short_name": "Balance",
-  "description": "Control de gastos e ingresos compartido",
+  "description": "Control de gastos e ingresos",
   "start_url": "/presupuesto/",
   "scope": "/presupuesto/",
   "display": "standalone",
