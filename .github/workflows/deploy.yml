@@ -2,8 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -11,37 +10,43 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-deploy:
-    runs-on: ubuntu-latest
+  deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Inyectar configuración de Firebase
+      - name: Inject secrets and build
         run: |
-          sed -i \
-            -e "s|__FIREBASE_API_KEY__|${{ secrets.FIREBASE_API_KEY }}|g" \
-            -e "s|__FIREBASE_AUTH_DOMAIN__|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" \
-            -e "s|__FIREBASE_PROJECT_ID__|${{ secrets.FIREBASE_PROJECT_ID }}|g" \
-            -e "s|__FIREBASE_STORAGE_BUCKET__|${{ secrets.FIREBASE_STORAGE_BUCKET }}|g" \
-            -e "s|__FIREBASE_MESSAGING_SENDER_ID__|${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}|g" \
-            -e "s|__FIREBASE_APP_ID__|${{ secrets.FIREBASE_APP_ID }}|g" \
-            -e "s|__ALLOWED_EMAIL__|${{ secrets.ALLOWED_EMAIL }}|g" \
-            index.html
+          mkdir -p dist
+          cp src/index.html dist/index.html
+          sed -i "s|__FIREBASE_API_KEY__|${{ secrets.FIREBASE_API_KEY }}|g" dist/index.html
+          sed -i "s|__FIREBASE_AUTH_DOMAIN__|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" dist/index.html
+          sed -i "s|__FIREBASE_DB_URL__|${{ secrets.FIREBASE_DB_URL }}|g" dist/index.html
+          sed -i "s|__FIREBASE_PROJECT_ID__|${{ secrets.FIREBASE_PROJECT_ID }}|g" dist/index.html
+          sed -i "s|__FIREBASE_APP_ID__|${{ secrets.FIREBASE_APP_ID }}|g" dist/index.html
+          sed -i "s|__ALLOWED_EMAIL__|${{ secrets.ALLOWED_EMAIL }}|g" dist/index.html
+          cp src/manifest.json dist/manifest.json
+          cp src/sw.js dist/sw.js
+          sed -i "s|__SW_VERSION__|${{ github.sha }}|g" dist/sw.js dist/index.html
+          cp src/icon-192.png dist/icon-192.png
+          cp src/icon-512.png dist/icon-512.png
 
-      - name: Sellar versión del service worker (cache-busting)
-        run: |
-          sed -i "s|__SW_VERSION__|${{ github.sha }}|g" sw.js index.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: .
-      - id: deployment
+          path: 'dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
