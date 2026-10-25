@@ -631,9 +631,9 @@ const app = initializeApp({
 });
 const auth = getAuth(app);
 const db   = getDatabase(app);
-// Única cuenta autorizada (inyectada por GitHub Actions desde el secreto ALLOWED_EMAIL).
+// Cuentas autorizadas, separadas por coma (inyectadas por GitHub Actions desde el secreto ALLOWED_EMAIL).
 // Esto es comodidad en el cliente; la barrera real son las reglas de Realtime Database.
-const ALLOWED_EMAIL = '__ALLOWED_EMAIL__';
+const ALLOWED_EMAILS = '__ALLOWED_EMAIL__'.split(',').map(e=>e.trim().toLowerCase()).filter(Boolean);
 const persistReady = setPersistence(auth, browserLocalPersistence).catch(()=>{});
 
 
@@ -756,7 +756,7 @@ function setMsg(t,cls){
 function googleProvider(){
   const p=new GoogleAuthProvider();
   // Propone directamente tu cuenta y muestra el selector si hay varias.
-  p.setCustomParameters({ prompt:'select_account', login_hint: ALLOWED_EMAIL });
+  p.setCustomParameters({ prompt:'select_account', login_hint: ALLOWED_EMAILS[0] || '' });
   return p;
 }
 
@@ -768,7 +768,7 @@ getRedirectResult(auth).catch(e=>{
 persistReady.then(()=>onAuthStateChanged(auth, async user=>{
   if(!user){ showLogin(); return; }
   // Cualquier cuenta de Google llega hasta aquí: se expulsa la que no sea la tuya.
-  if(user.email!==ALLOWED_EMAIL || !user.emailVerified){
+  if(!ALLOWED_EMAILS.includes((user.email||'').toLowerCase()) || !user.emailVerified){
     await signOut(auth);
     showLogin();
     setMsg('Esa cuenta no tiene acceso a esta app.','err');
